@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ur-Latn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fasal Profit/Loss Calculator</title>
+<style>
+  :root{
+    --soil: #5C4224; --soil-dark: #3A2C18; --wheat: #D4A24C;
+    --leaf: #4A7C3A; --leaf-dark: #355A29; --cream: #F6F0E2;
+    --card: #FFFDF8; --ink: #2B2118; --loss: #B23A2F; --muted: #8A7B63;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(180deg, var(--cream) 0%, #EFE6D0 100%);
+    color: var(--ink); min-height:100vh; padding: 18px 14px 60px;
+  }
+  h1{ font-family: Georgia, serif; font-size: 22px; color: var(--soil-dark); margin: 4px 0 2px; }
+  .sub{ color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .field-block{
+    background: var(--card); border: 1px solid #E4D8BC; border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(58,44,24,0.06);
+  }
+  .field-block h2{
+    font-size: 12.5px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--leaf-dark); margin: 0 0 10px; display:flex; align-items:center; gap:6px;
+  }
+  .field-block h2::before{ content:""; width:8px;height:8px; background: var(--leaf); border-radius: 2px; display:inline-block; }
+  label{ display:block; font-size: 13px; color: var(--soil-dark); margin: 8px 0 4px; }
+  input[type=text], input[type=number], input[type=date], select{
+    width:100%; padding: 10px 12px; border: 1.5px solid #DCCEA9; border-radius: 9px;
+    font-size: 15px; background: #FFFEFB; color: var(--ink); outline: none;
+  }
+  input:focus, select:focus{ border-color: var(--leaf); }
+  .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .add-btn{
+    display:block; width:100%; margin-top: 12px; padding: 12px;
+    background: var(--leaf); border:none; color: #fff;
+    border-radius: 9px; font-size: 14.5px; font-weight:700; cursor:pointer;
+  }
+  .add-btn:active{ background: var(--leaf-dark); }
+  .add-btn:disabled{ background:#B9AE95; cursor:not-allowed; }
+
+  .new-btn{
+    display:block; width:100%; margin-top: 10px; padding: 11px;
+    background: transparent; border: 1.5px dashed var(--soil); color: var(--soil-dark);
+    border-radius: 9px; font-size: 13.5px; cursor: pointer;
+  }
+
+  .activity-list{ margin-top: 12px; display:flex; flex-direction:column; gap:8px; }
+  .activity-row{
+    display:flex; justify-content:space-between; align-items:center;
+    background: var(--cream); border:1px solid #E4D8BC; border-radius:10px;
+    padding: 8px 10px; font-size: 13px;
+  }
+  .activity-row .a-info b{ color: var(--soil-dark); }
+  .activity-row .a-info .a-date{ color: var(--muted); font-size:11.5px; }
+  .activity-row .a-cost{ font-weight:700; color: var(--soil-dark); white-space:nowrap; }
+  .activity-row button{ border:none; background:none; font-size:15px; cursor:pointer; }
+  .empty-msg{ color: var(--muted); font-size: 12.5px; text-align:center; padding: 8px 0; }
+
+  .result{
+    margin: 0 0 16px;
+    background: var(--soil-dark); color: var(--cream);
+    border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(58,44,24,0.18);
+  }
+  .result.profit{ background: linear-gradient(135deg, var(--leaf-dark), var(--leaf)); }
+  .result.loss{ background: linear-gradient(135deg, #7A241C, var(--loss)); }
+  .result .label{ font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85; }
+  .result .amount{ font-family: Georgia, serif; font-size: 28px; margin: 4px 0 10px; font-weight: bold; }
+  .bars{ display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+  .bar-row{ display:flex; align-items:center; gap:8px; font-size:12px; }
+  .bar-track{ flex:1; background: rgba(255,255,255,0.18); border-radius: 6px; height: 10px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px; }
+  .bar-fill.cost{ background: var(--wheat); }
+  .bar-fill.rev{ background: #BFE3A8; }
+  .stats-mini{ display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; font-size: 12.5px; }
+  .stats-mini div{ background: rgba(255,255,255,0.12); padding: 8px 10px; border-radius: 9px; }
+  .stats-mini b{ display:block; font-size:14px; margin-top:2px;}
+
+  .fasal-header{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .fasal-header .name{ font-weight:700; color: var(--soil-dark); font-size:15px; }
+  .fasal-header .meta{ color: var(--muted); font-size:12px; }
+  .del-fasal{ border:none; background:none; font-size:13px; color: var(--loss); cursor:pointer; }
+
+  .autosave-note{ font-size:11.5px; color: var(--muted); text-align:center; margin-top:8px; }
+
+  .undo-banner{
+    display:none;
+    background: var(--soil-dark); color: var(--cream);
+    border-radius: 12px; padding: 10px 12px;
+    margin-bottom: 12px; font-size: 13px;
+    align-items:center; justify-content:space-between; gap:10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .undo-banner.show{ display:flex; }
+  .undo-banner button{
+    background: var(--wheat); color: var(--soil-dark); border:none;
+    padding: 6px 12px; border-radius: 8px; font-size:13px; font-weight:700; cursor:pointer;
+    white-space:nowrap;
+  }
+
+  .toast{
+    display:none;
+    background: var(--soil-dark); color: var(--cream);
+    border-radius: 12px; padding: 10px 14px;
+    margin-bottom: 12px; font-size: 13px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .toast.show{ display:block; }
+
+  .breakdown-list{ margin-top: 12px; display:flex; flex-direction:column; gap:7px; }
+  .breakdown-row{ display:flex; align-items:center; gap:8px; font-size:12px; }
+  .breakdown-row .b-label{ width: 90px; opacity:0.9; }
+  .breakdown-row .b-track{ flex:1; background: rgba(255,255,255,0.15); border-radius: 6px; height: 8px; overflow:hidden; }
+  .breakdown-row .b-fill{ height:100%; border-radius:6px; background: var(--wheat); }
+  .breakdown-row .b-amt{ width: 66px; text-align:right; font-weight:600; white-space:nowrap; }
+  .breakdown-empty{ font-size:12px; opacity:0.75; margin-top:8px; }
+  .insight-line{ font-size:12.5px; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.15); opacity:0.95; }
+
+  .modal-overlay{
+    display:none;
+    position: fixed; inset: 0; background: rgba(43,33,24,0.55);
+    z-index: 50; align-items:center; justify-content:center; padding: 20px;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    background: var(--card); border-radius: 16px; padding: 20px;
+    max-width: 340px; width:100%; box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+  }
+  .modal-msg{ font-size: 14.5px; color: var(--ink); margin-bottom: 16px; line-height:1.5; }
+  .modal-actions{ display:flex; gap:10px; }
+  .modal-btn{ flex:1; padding: 11px; border-radius: 9px; font-size:14px; font-weight:600; border:none; cursor:pointer; }
+  .modal-btn.cancel{ background: #EFE6D0; color: var(--soil-dark); }
+  .modal-btn.ok{ background: var(--loss); color:#fff; }
+</style>
+</head>
+<body>
+
+<h1>🌾 AGRI Calculator</h1>
+
+<div class="undo-banner" id="undoBanner">
+  <span id="undoMsg"></span>
+  <button onclick="undoLastDelete()">↩️ Undo</button>
+</div>
+
+<div class="toast" id="toastBox"><span id="toastMsg"></span></div>
+
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal-box">
+    <div class="modal-msg" id="confirmMsg"></div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="resolveConfirm(false)">Cancel</button>
+      <button class="modal-btn ok" onclick="resolveConfirm(true)">Delete Karein</button>
+    </div>
+  </div>
+</div>
+
+<div class="result" id="resultBox" style="display:none;">
+  <div class="label" id="resultCropName" style="font-size:15px; opacity:1; margin-bottom:4px; font-weight:700;"></div>
+  <div class="label" id="resultLabel">Result</div>
+  <div class="amount" id="resultAmount">Rs 0</div>
+  <div class="bars">
+    <div class="bar-row">
+      <span style="width:60px">Lagat</span>
+      <div class="bar-track"><div class="bar-fill cost" id="costBar" style="width:0%"></div></div>
+    </div>
+    <div class="bar-row">
+      <span style="width:60px">Aamdani</span>
+      <div class="bar-track"><div class="bar-fill rev" id="revBar" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="stats-mini">
+    <div>Kul Lagat<b id="totalCost">Rs 0</b></div>
+    <div>Kul Aamdani<b id="totalRev">Rs 0</b></div>
+    <div>Cost per Acre<b id="costPerAcre">Rs 0</b></div>
+    <div>Profit Margin<b id="margin">0%</b></div>
+  </div>
+  <div class="breakdown-list" id="breakdownList"></div>
+  <div class="insight-line" id="insightLine"></div>
+</div>
+
+<div class="field-block">
+  <h2>1. Fasal Select Karein</h2>
+  <select id="fasalSelect" onchange="onFasalSelectChange()">
+    <option value="">— Fasal chunein —</option>
+  </select>
+  <button class="new-btn" onclick="showNewFasalForm()">+ Nai Fasal Shuru Karein</button>
+
+  <div id="newFasalForm" style="display:none; margin-top:12px;">
+    <label>Fasal ka Naam</label>
+    <input type="text" id="newCropName" placeholder="Maslan: Gehun, Chawal, Kapas">
+    <div class="grid2">
+      <div>
+        <label>Rakba (Acres)</label>
+        <input type="number" id="newArea" placeholder="0" min="0">
+      </div>
+      <div>
+        <label>Boai ki Tareekh</label>
+        <input type="date" id="newDate">
+      </div>
+    </div>
+    <button class="add-btn" onclick="createFasal()">Fasal Banayein</button>
+  </div>
+
+  <div id="fasalHeader" style="display:none;">
+    <div class="fasal-header">
+      <div>
+        <div class="name" id="hName"></div>
+        <div class="meta" id="hMeta"></div>
+      </div>
+      <button class="del-fasal" onclick="deleteFasal()">🗑️ Delete</button>
+    </div>
+  </div>
+
+  <div style="margin-top:14px; border-top:1px dashed #DCCEA9; padding-top:12px;">
+    <div class="sub" style="margin-bottom:8px;">✓ Ab data is phone/browser mein hi khud-ba-khud mehfooz rehta hai — app band ya reload karne se nahi jayega. "Export" ka istamal sirf tab karein jab data doosre phone/browser mein le jana ho.</div>
+    <div class="grid2">
+      <button class="new-btn" onclick="exportData()">⬇️ Export Data</button>
+      <button class="new-btn" onclick="showImportBox()">⬆️ Import Data</button>
+    </div>
+    <div id="importBox" style="display:none; margin-top:10px;">
+      <label>Yahan apna pehlay copy kiya hua data paste karein</label>
+      <textarea id="importText" rows="4" style="width:100%; padding:10px; border:1.5px solid #DCCEA9; border-radius:9px; font-size:13px;"></textarea>
+      <button class="add-btn" onclick="importData()">Import Karein</button>
+    </div>
+    <div id="exportBox" style="display:none; margin-top:10px;">
+      <label>Ye text copy kar k mehfooz rakhein</label>
+      <textarea id="exportText" rows="4" readonly style="width:100%; padding:10px; border:1.5px solid #DCCEA9; border-radius:9px; font-size:12px;" onclick="this.select()"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="field-block" id="taskBlock" style="display:none;">
+  <h2>2. Kharch Add Karein</h2>
+  <label>Task / Kaam</label>
+  <select id="taskType">
+    <option value="Tractor">🚜 Tractor</option>
+    <option value="Beej">🌾 Beej</option>
+    <option value="Khaad">🌱 Khaad</option>
+    <option value="Paani">💧 Paani</option>
+    <option value="Spray">🐛 Spray</option>
+    <option value="Mazdoori">👷 Mazdoori</option>
+    <option value="Other">📦 Other</option>
+  </select>
+  <div class="grid2">
+    <div>
+      <label>Tareekh</label>
+      <input type="date" id="taskDate">
+    </div>
+    <div>
+      <label>3. Cost (Rs)</label>
+      <input type="number" id="taskCost" placeholder="0" min="0">
+    </div>
+  </div>
+  <label>Note (optional)</label>
+  <input type="text" id="taskNote" placeholder="Maslan: 2nd paani">
+  <button class="add-btn" onclick="addTask()">+ Record Mein Add Karein</button>
+  <div class="autosave-note">✓ Har entry khud-ba-khud save ho jati hai</div>
+
+  <div class="activity-list" id="activityList"></div>
+</div>
+
+<div class="field-block" id="yieldBlock" style="display:none;">
+  <h2>Paidawar aur Farokht (jab fasal tayar ho)</h2>
+  <div class="grid2">
+    <div>
+      <label>Kul Paidawar (Mann/Kg)</label>
+      <input type="number" id="yieldAmt" placeholder="0" min="0" onchange="updateYieldPrice()">
+    </div>
+    <div>
+      <label>Rate per Mann/Kg (Rs)</label>
+      <input type="number" id="priceAmt" placeholder="0" min="0" onchange="updateYieldPrice()">
+    </div>
+  </div>
+</div>
+
+<script>
+  const LOCAL_KEY = 'agri_calculator_data';
+  let fasalList = loadFromDevice();
+  let currentId = null;
+  let currentEntry = null;
+  let lastDeleted = null;
+  let undoTimer = null;
+
+  function loadFromDevice(){
+    try{
+      const raw = localStorage.getItem(LOCAL_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){
+      console.error('load failed', e);
+      return [];
+    }
+  }
+
+  function saveToDevice(){
+    try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(fasalList)); }
+    catch(e){ console.error('save failed', e); showToast('Save mein masla hua.'); }
+  }
+
+  function showUndoBanner(message){
+    const banner = document.getElementById('undoBanner');
+    document.getElementById('undoMsg').innerText = message;
+    banner.classList.add('show');
+    if(undoTimer) clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => {
+      banner.classList.remove('show');
+      lastDeleted = null;
+    }, 8000);
+  }
+
+  let toastTimer = null;
+  function showToast(message){
+    const box = document.getElementById('toastBox');
+    document.getElementById('toastMsg').innerText = message;
+    box.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => box.classList.remove('show'), 3500);
+  }
+
+  let confirmResolve = null;
+  function customConfirm(message){
+    return new Promise(resolve => {
+      confirmResolve = resolve;
+      document.getElementById('confirmMsg').innerText = message;
+      document.getElementById('confirmOverlay').classList.add('show');
+    });
+  }
+  function resolveConfirm(val){
+    document.getElementById('confirmOverlay').classList.remove('show');
+    if(confirmResolve) confirmResolve(val);
+    confirmResolve = null;
+  }
+
+  function hideUndoBanner(){
+    document.getElementById('undoBanner').classList.remove('show');
+    if(undoTimer) clearTimeout(undoTimer);
+  }
+
+  function undoLastDelete(){
+    if(!lastDeleted) return;
+    if(lastDeleted.type === 'fasal'){
+      fasalList.push(lastDeleted.data);
+      refreshFasalOptions(lastDeleted.data.id);
+      selectFasal(lastDeleted.data.id);
+    } else if(lastDeleted.type === 'activity'){
+      const entry = fasalList.find(e => e.id === lastDeleted.fasalId);
+      if(entry){
+        entry.activities = entry.activities || [];
+        entry.activities.push(lastDeleted.activity);
+        if(currentId === lastDeleted.fasalId){
+          renderActivities();
+          calculate();
+        }
+      }
+    }
+    saveToDevice();
+    lastDeleted = null;
+    hideUndoBanner();
+  }
+
+  document.getElementById('newDate').valueAsDate = new Date();
+  document.getElementById('taskDate').valueAsDate = new Date();
+
+  const typeIcons = { Tractor:'\ud83d\ude9c', Beej:'\ud83c\udf3e', Khaad:'\ud83c\udf31', Paani:'\ud83d\udca7', Spray:'\ud83d\udc1b', Mazdoori:'\ud83d\udc77', Other:'\ud83d\udce6' };
+
+  function fmt(n){ return 'Rs ' + Math.round(n).toLocaleString('en-IN'); }
+  function escapeHtml(str){ const d = document.createElement('div'); d.innerText = str; return d.innerHTML; }
+
+  function refreshFasalOptions(selectId){
+    const sel = document.getElementById('fasalSelect');
+    const sorted = [...fasalList].sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+    sel.innerHTML = '<option value="">\u2014 Fasal chunein \u2014</option>' +
+      sorted.map(e => `<option value="${e.id}">${escapeHtml(e.cropName)} \u2014 ${e.date}</option>`).join('');
+    if(selectId){ sel.value = selectId; }
+  }
+
+  function showNewFasalForm(){
+    document.getElementById('newFasalForm').style.display = 'block';
+    document.getElementById('fasalSelect').value = '';
+    hideFasalDetails();
+  }
+
+  function createFasal(){
+    const name = document.getElementById('newCropName').value.trim();
+    if(!name){ showToast('Fasal ka naam likhein.'); return; }
+    const area = parseFloat(document.getElementById('newArea').value) || 0;
+    const date = document.getElementById('newDate').value || new Date().toISOString().slice(0,10);
+    const id = 'entry_' + Date.now();
+    const data = { id, cropName: name, date, area, yieldAmt: 0, price: 0, activities: [] };
+    fasalList.push(data);
+    saveToDevice();
+    document.getElementById('newFasalForm').style.display = 'none';
+    document.getElementById('newCropName').value = '';
+    document.getElementById('newArea').value = '';
+    refreshFasalOptions(id);
+    selectFasal(id);
+  }
+
+  function onFasalSelectChange(){
+    const id = document.getElementById('fasalSelect').value;
+    document.getElementById('newFasalForm').style.display = 'none';
+    if(!id){ hideFasalDetails(); return; }
+    selectFasal(id);
+  }
+
+  function selectFasal(id){
+    const entry = fasalList.find(e => e.id === id);
+    if(!entry) return;
+    currentId = id;
+    currentEntry = entry;
+    document.getElementById('fasalSelect').value = id;
+    document.getElementById('fasalHeader').style.display = 'block';
+    document.getElementById('taskBlock').style.display = 'block';
+    document.getElementById('yieldBlock').style.display = 'block';
+    document.getElementById('resultBox').style.display = 'block';
+    document.getElementById('hName').innerText = currentEntry.cropName;
+    document.getElementById('hMeta').innerText = currentEntry.date + ' \u00b7 ' + (currentEntry.area || 0) + ' acre';
+    document.getElementById('yieldAmt').value = currentEntry.yieldAmt || '';
+    document.getElementById('priceAmt').value = currentEntry.price || '';
+    renderActivities();
+    calculate();
+  }
+
+  function hideFasalDetails(){
+    currentId = null; currentEntry = null;
+    document.getElementById('fasalHeader').style.display = 'none';
+    document.getElementById('taskBlock').style.display = 'none';
+    document.getElementById('yieldBlock').style.display = 'none';
+    document.getElementById('resultBox').style.display = 'none';
+  }
+
+  function addTask(){
+    if(!currentEntry) return;
+    const cost = parseFloat(document.getElementById('taskCost').value) || 0;
+    if(cost <= 0){ showToast('Cost daalein pehlay.'); return; }
+    const type = document.getElementById('taskType').value;
+    const date = document.getElementById('taskDate').value || new Date().toISOString().slice(0,10);
+    const note = document.getElementById('taskNote').value;
+    currentEntry.activities = currentEntry.activities || [];
+    currentEntry.activities.push({ id: 'a'+Date.now(), type, date, cost, note });
+    saveToDevice();
+    document.getElementById('taskCost').value = '';
+    document.getElementById('taskNote').value = '';
+    renderActivities();
+    calculate();
+  }
+
+  async function removeActivity(aid){
+    if(!currentEntry) return;
+    const activities = currentEntry.activities || [];
+    const removed = activities.find(a => a.id === aid);
+    if(!removed) return;
+    const ok = await customConfirm('"' + removed.type + '" ka ye kharch (Rs ' + Math.round(removed.cost).toLocaleString('en-IN') + ') delete karna chahte hain?');
+    if(!ok) return;
+    currentEntry.activities = activities.filter(a => a.id !== aid);
+    saveToDevice();
+    lastDeleted = { type: 'activity', fasalId: currentId, activity: removed };
+    showUndoBanner((typeIcons[removed.type]||'') + ' ' + removed.type + ' ka kharch delete ho gaya.');
+    renderActivities();
+    calculate();
+  }
+
+  function updateYieldPrice(){
+    if(!currentEntry) return;
+    currentEntry.yieldAmt = parseFloat(document.getElementById('yieldAmt').value) || 0;
+    currentEntry.price = parseFloat(document.getElementById('priceAmt').value) || 0;
+    saveToDevice();
+    calculate();
+  }
+
+  async function deleteFasal(){
+    if(!currentId) return;
+    const ok = await customConfirm('Ye fasal record hamesha k liye delete ho jayega. Pakka?');
+    if(!ok) return;
+    const removed = fasalList.find(e => e.id === currentId);
+    fasalList = fasalList.filter(e => e.id !== currentId);
+    saveToDevice();
+    if(removed){
+      lastDeleted = { type: 'fasal', data: removed };
+      showUndoBanner('"' + removed.cropName + '" delete ho gayi.');
+    }
+    hideFasalDetails();
+    document.getElementById('fasalSelect').value = '';
+    refreshFasalOptions();
+  }
+
+  function renderActivities(){
+    const el = document.getElementById('activityList');
+    const activities = (currentEntry && currentEntry.activities) || [];
+    if(activities.length === 0){
+      el.innerHTML = '<div class="empty-msg">Abhi tak koi kharch add nahi hua</div>';
+      return;
+    }
+    const sorted = [...activities].sort((a,b) => a.date.localeCompare(b.date));
+    el.innerHTML = sorted.map(a => `
+      <div class="activity-row">
+        <div class="a-info">
+          <b>${typeIcons[a.type]||''} ${escapeHtml(a.type)}</b>${a.note ? ' \u2014 ' + escapeHtml(a.note) : ''}
+          <div class="a-date">${a.date}</div>
+        </div>
+        <div class="a-cost">Rs ${Math.round(a.cost).toLocaleString('en-IN')}</div>
+        <button onclick="removeActivity('${a.id}')">\ud83d\uddd1\ufe0f</button>
+      </div>
+    `).join('');
+  }
+
+  function calculate(){
+    if(!currentEntry){ return; }
+    document.getElementById('resultCropName').innerText = '🌾 ' + currentEntry.cropName;
+    const area = currentEntry.area || 0;
+    const activitiesCost = (currentEntry.activities || []).reduce((s,a) => s + a.cost, 0);
+    const totalCost = activitiesCost;
+    const totalRev = (currentEntry.yieldAmt || 0) * (currentEntry.price || 0);
+    const profit = totalRev - totalCost;
+    const costPerAcre = area > 0 ? totalCost / area : 0;
+    const margin = totalRev > 0 ? (profit / totalRev * 100) : 0;
+
+    document.getElementById('totalCost').innerText = fmt(totalCost);
+    document.getElementById('totalRev').innerText = fmt(totalRev);
+    document.getElementById('costPerAcre').innerText = area > 0 ? fmt(costPerAcre) : '\u2014';
+    document.getElementById('margin').innerText = totalRev > 0 ? margin.toFixed(1) + '%' : '0%';
+
+    const box = document.getElementById('resultBox');
+    const label = document.getElementById('resultLabel');
+    const amount = document.getElementById('resultAmount');
+    box.classList.remove('profit','loss');
+    if(totalCost === 0 && totalRev === 0){
+      label.innerText = 'Result';
+      amount.innerText = 'Rs 0';
+    } else if(profit >= 0){
+      box.classList.add('profit');
+      label.innerText = 'Munafa (Profit)';
+      amount.innerText = fmt(profit);
+    } else {
+      box.classList.add('loss');
+      label.innerText = 'Nuqsan (Loss)';
+      amount.innerText = fmt(Math.abs(profit));
+    }
+    const maxVal = Math.max(totalCost, totalRev, 1);
+    document.getElementById('costBar').style.width = (totalCost/maxVal*100) + '%';
+    document.getElementById('revBar').style.width = (totalRev/maxVal*100) + '%';
+
+    renderBreakdown(currentEntry.activities || [], totalCost, profit, area);
+  }
+
+  function renderBreakdown(activities, totalCost, profit, area){
+    const byType = {};
+    activities.forEach(a => { byType[a.type] = (byType[a.type] || 0) + a.cost; });
+    const rows = Object.entries(byType).sort((a,b) => b[1] - a[1]);
+    const listEl = document.getElementById('breakdownList');
+    const insightEl = document.getElementById('insightLine');
+
+    if(rows.length === 0){
+      listEl.innerHTML = '<div class="breakdown-empty">Kharch add karein to yahan category-wise breakdown dikhega</div>';
+      insightEl.innerText = '';
+      return;
+    }
+
+    const maxRow = rows[0][1];
+    listEl.innerHTML = rows.map(([type, amt]) => `
+      <div class="breakdown-row">
+        <span class="b-label">${typeIcons[type]||''} ${escapeHtml(type)}</span>
+        <div class="b-track"><div class="b-fill" style="width:${(amt/maxRow*100)}%"></div></div>
+        <span class="b-amt">Rs ${Math.round(amt).toLocaleString('en-IN')}</span>
+      </div>
+    `).join('');
+
+    const topType = rows[0][0];
+    const topPct = totalCost > 0 ? (rows[0][1] / totalCost * 100).toFixed(0) : 0;
+    let insight = `Sab se zyada kharch: ${topType} (${topPct}% lagat ka)`;
+    if(area > 0){
+      insight += ` · Rs ${Math.round(totalCost/area).toLocaleString('en-IN')} per acre`;
+    }
+    insightEl.innerText = insight;
+  }
+
+  function exportData(){
+    document.getElementById('exportBox').style.display = 'block';
+    document.getElementById('importBox').style.display = 'none';
+    document.getElementById('exportText').value = JSON.stringify(fasalList);
+    document.getElementById('exportText').select();
+  }
+
+  function showImportBox(){
+    document.getElementById('importBox').style.display = 'block';
+    document.getElementById('exportBox').style.display = 'none';
+  }
+
+  function importData(){
+    const text = document.getElementById('importText').value.trim();
+    if(!text){ showToast('Pehlay data paste karein.'); return; }
+    try{
+      const parsed = JSON.parse(text);
+      if(!Array.isArray(parsed)){ throw new Error('Format sahi nahi hai'); }
+      fasalList = parsed;
+      saveToDevice();
+      document.getElementById('importBox').style.display = 'none';
+      document.getElementById('importText').value = '';
+      refreshFasalOptions();
+      hideFasalDetails();
+      showToast('Data import ho gaya!');
+    }catch(e){
+      showToast('Import nahi ho saka. Data sahi format mein paste karein.');
+    }
+  }
+
+  refreshFasalOptions();
+</script>
+
+</body>
+</html>
